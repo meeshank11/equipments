@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Equipment Map</title>
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-    <!-- Leaflet MarkerCluster CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-    <!-- Leaflet MarkerCluster JS -->
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
@@ -22,6 +18,7 @@
         #controls { padding: 10px; background: #f8f9fa; text-align: center; position: relative; }
         #search { width: 60%; padding: 5px; margin-right: 10px; }
         #filter { padding: 5px; }
+        #locate-btn { padding: 5px 10px; margin-left: 10px; }
         #search-dropdown {
             position: absolute;
             top: 40px;
@@ -35,17 +32,12 @@
             z-index: 1000;
             display: none;
         }
-        .dropdown-item {
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        .dropdown-item:hover {
-            background: #f0f0f0;
-        }
+        .dropdown-item { padding: 5px 10px; cursor: pointer; }
+        .dropdown-item:hover { background: #f0f0f0; }
     </style>
 </head>
 <body>
-    <h2>Electrical Equipment in Seraikela</h2>
+    <h2>Electrical Equipment in Seraikela, Adityapur & Jamshedpur</h2>
     <div id="controls">
         <input type="text" id="search" placeholder="Search by equipment name...">
         <div id="search-dropdown"></div>
@@ -55,373 +47,361 @@
             <option value="rmu">RMUs</option>
             <option value="substation">Substations</option>
         </select>
+        <button id="locate-btn">Locate Me</button>
     </div>
     <div id="map"></div>
+
     <script>
-        // Initialize the map
-        var map = L.map('map').setView([22.80222549, 86.13745], 12);
-        // Add Google Satellite tiles
-        L.tileLayer('http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}', {
+        var map = L.map('map').setView([22.80222549, 86.13745], 12); // Default center: Adityapur/Jamshedpur
+        L.tileLayer('http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-        // Define custom icons
-        var icons = {
-            transformer: L.icon({ iconUrl: 'https://img.icons8.com/?size=100&id=e1W8qPyHmBSb&format=png&color=000000', iconSize: [25, 25] }),
-            rmu: L.icon({ iconUrl: 'https://img.icons8.com/?size=100&id=J4l0714N594x&format=png&color=000000', iconSize: [25, 25] }),
-            substation: L.icon({ iconUrl: 'https://img.icons8.com/?size=100&id=G0U0UHySUjNW&format=png&color=000000', iconSize: [20, 20] }),
-            user: L.icon({ iconUrl: 'https://img.icons8.com/?size=100&id=108652&format=png&color=000000', iconSize: [40, 40] })
-        };
-        // Full equipment data (659 entries, truncated here for brevity)
-        var equipment = [
-                ["7 STAR DT", 22.80371, 86.11534, "transformer"],
-    ["A V Engg DT/ Precon", 22.77626, 86.13733, "transformer"],
-    ["AADHARSHILA DT", 22.77923, 86.16203, "transformer"],
-    ["AAKRITI SHINE DT", 22.82113, 86.08825, "transformer"],
-    ["AASTHA ARCADE DT", 22.79347, 86.1641, "transformer"],
-    ["Aditya Ashiana DT1", 22.79364, 86.12838, "transformer"],
-    ["Aditya Ashiana DT2", 22.79361, 86.12835, "transformer"],
-    ["Aditya Ashiana DT3", 22.79359, 86.12832, "transformer"],
-    ["Aditya Ashiana DT4", 22.79357, 86.1283, "transformer"],
-    ["ADITYA GARDEN DT-1", 22.79485, 86.14341, "transformer"],
-    ["ADITYA GARDEN DT-2", 22.79613, 86.14359, "transformer"],
-    ["ADITYA GARDEN DT-3", 22.79749, 86.14415, "transformer"],
-    ["ADITYA GREEN DT", 22.79119, 86.16907, "transformer"],
-    ["ADITYAPUR DIES DT", 22.7898, 86.14588, "transformer"],
-    ["Agro Mills DT", 22.78737, 86.14729, "transformer"],
-    ["ALMAMET DT", 22.77742, 86.13508, "transformer"],
-    ["AMIT TRADING DT", 22.79864, 86.12271, "transformer"],
-    ["ANAC DT", 22.78732, 86.15331, "transformer"],
-    ["ANAND VIHAR DT", 22.79683, 86.14043, "transformer"],
-    ["ARORA FOODS DT", 22.78841, 86.14509, "transformer"],
-    ["ASHIYANA DT", 22.79066, 86.15455, "transformer"],
-    ["ASIA DT", 22.79744, 86.13262, "transformer"],
-    ["ASSOCIATE ENGIFEB DT", 22.78528, 86.13542, "transformer"],
-    ["ASTHA FERROTECH DT", 22.7895, 86.1389, "transformer"],
-    ["ATUL DT", 22.77817, 86.1325, "transformer"],
-    ["Auto Craft DT", 22.80457, 86.11151, "transformer"],
-    ["AUTO RUBBER DT", 22.78654, 86.14951, "transformer"],
-    ["AUTOMECH ENGG. DT", 22.78718, 86.14719, "transformer"],
-    ["BADAMARI DT", 22.86978, 86.09083, "transformer"],
-    ["BAJAJ FAIDERAL DT", 22.78705, 86.14393, "transformer"],
-    ["BAJRANG LAL GOYAL DT", 22.811, 86.10954, "transformer"],
-    ["BAJRANG TOWER DT", 22.81681, 86.10016, "transformer"],
-    ["BALAJI ENTERPRISE DT / LS", 22.83041, 86.06993, "transformer"],
-    ["BALAJI KRISHNA DT", 22.80343, 86.11797, "transformer"],
-    ["Balak Madhya Vidyalaya SK DT", 22.70702, 85.93994, "transformer"],
-    ["BALIGUMA DT#2", 22.79949, 86.02883, "transformer"],
-    ["BALRAM APARTMENT DT", 22.80298, 86.13002, "transformer"],
-    ["BANK COLONY DT-1", 22.79518, 86.16195, "transformer"],
-    ["BANK COLONY DT-2", 22.79319, 86.16289, "transformer"],
-    ["BANPRIYA DT", 22.78365, 86.12689, "transformer"],
-    ["BANTANAGAR DT", 22.7743, 86.1618, "transformer"],
-    ["BDR FURNITURE DT", 22.79017, 86.14057, "transformer"],
-    ["BEBBCO ENGG. DT", 22.80887, 86.11351, "transformer"],
-    ["BHARDWAJ BROTHERS DT", 22.77774, 86.13404, "transformer"],
-    ["Bhardwaj DT", 22.79856, 86.12278, "transformer"],
-    ["BHOLADIH DT", 22.80271, 86.03006, "transformer"],
-    ["BIHAR INSECTICIDES DT", 22.7822, 86.13768, "transformer"],
-    ["BIRBANS DT", 22.8005, 86.03602, "transformer"],
-    ["BIRBANS S/S DT", 22.8005, 86.03598, "transformer"],
-    ["BLUE STAR BRICKS DT / PH#5", 22.82397, 86.09047, "transformer"],
-    ["CHAMPANAGER DT", 22.85246, 86.09037, "transformer"],
-    ["CHANDRA CHEMICALS DT", 22.79886, 86.11591, "transformer"],
-    ["CHIRUGUDA DT", 22.86357, 86.08994, "transformer"],
-    ["CHITRAKOOT DT", 22.79212, 86.16836, "transformer"],
-    ["CHOTA HARIHARPUR DT", 22.83176, 86.06092, "transformer"],
-    ["CITY CLASSICS DT", 22.78781, 86.16325, "transformer"],
-    ["Civil Court SK DT", 22.70406, 85.93535, "transformer"],
-    ["D R SON'S DT", 22.78144, 86.13651, "transformer"],
-    ["DAV DT", 22.77673, 86.15535, "transformer"],
-    ["DAYAL PRATAP DT", 22.81258, 86.1066, "transformer"],
-    ["DC Residence SK DT", 22.7097, 85.94365, "transformer"],
-    ["DEEKAY ENT. DT", 22.79705, 86.12936, "transformer"],
-    ["DEEPAK ENGG. DT", 22.80219, 86.10724, "transformer"],
-    ["DIKSHA DT", 22.79822, 86.12665, "transformer"],
-    ["DJ ENTERPRISES DT", 22.79862, 86.12023, "transformer"],
-    ["DT AUTO CRAT PH7", 22.80461, 86.11092, "transformer"],
-    ["DT MANOJ ENTERPRISE PH7", 22.80415, 86.10949, "transformer"],
-    ["DURGA PUJA MAIDAN DT", 22.81681, 86.10085, "transformer"],
-    ["DURGA STEEL DT", 22.78597, 86.134, "transformer"],
-    ["EASTERN COATING DT", 22.80085, 86.12214, "transformer"],
-    ["EFFECTIVE MARKETING DT", 22.80097, 86.12352, "transformer"],
-    ["EMC OFFICE DT PH7", 22.80226, 86.14168, "transformer"],
-    ["EMC S/S DT", 22.79969, 86.13606, "transformer"],
-    ["ESIC DT", 22.79594, 86.15469, "transformer"],
-    ["FORAM MALL DT", 22.79992, 86.12668, "transformer"],
-    ["FOUJI DT", 22.82601, 86.07288, "transformer"],
-    ["G.B ENTERPRISES DT", 22.78938, 86.14067, "transformer"],
-    ["GAIL DT", 22.81116, 86.14369, "transformer"],
-    ["GANESH MINERAL", 22.78346, 86.14476, "transformer"],
-    ["GANJIA DT", 22.7608, 86.08724, "transformer"],
-    ["Ganpati DT", 22.81655, 86.10357, "transformer"],
-    ["Garage Chowk SK DT", 22.70211, 85.9318, "transformer"],
-    ["GARG ENGG. DT", 22.80196, 86.11508, "transformer"],
-    ["GAURAV ENCLAVE DT", 22.81204, 86.10116, "transformer"],
-    ["GHURING DT", 22.83039, 86.08128, "transformer"],
-    ["Girl School SK DT", 22.70101, 85.93024, "transformer"],
-    ["GOLDEN HERITAGE DT", 22.80605, 86.12625, "transformer"],
-    ["GOPIDIH DT", 22.80926, 86.03146, "transformer"],
-    ["GORIAN DT", 22.83034, 86.08116, "transformer"],
-    ["Haat SK DT", 22.70221, 85.92783, "transformer"],
-    ["HARI OM NAGAR DT", 22.7914, 86.16427, "transformer"],
-    ["HARISUNDERPUR DT", 22.84923, 86.09469, "transformer"],
-    ["HENSAHUDI DT", 22.70203, 85.92375, "transformer"],
-    ["Hindustan Foundary PH1", 22.77594, 86.13302, "transformer"],
-    ["HINDUSTAN POLYTEX DT", 22.7881, 86.14353, "transformer"],
-    ["HIRA TOWER DT", 22.78377, 86.17166, "transformer"],
-    ["IDTR BOYS HOSTEL DT", 22.80563, 86.11493, "transformer"],
-    ["IDTR DT", 22.78876, 86.16885, "transformer"],
-    ["IMLI CHOWK DT", 22.78588, 86.15996, "transformer"],
-    ["IMPERIAL AUTO DT", 22.7906, 86.14311, "transformer"],
-    ["J.P. NAGAR DT", 22.79174, 86.16931, "transformer"],
-    ["J.P.UDYAAN DT", 22.78708, 86.17239, "transformer"],
-    ["JAI MATA DI DT", 22.77732, 86.13105, "transformer"],
-    ["JALARAM FORGING DT", 22.79476, 86.13139, "transformer"],
-    ["JAMSHEDPUR AUTO", 22.80331, 86.10616, "transformer"],
-    ["JAMUNA SARASWATI DT", 22.78755, 86.152, "transformer"],
-    ["Jayshree Ford DT", 22.79181, 86.14311, "transformer"],
-    ["JIADA CPSS-1", 22.7854, 86.16393, "transformer"],
-    ["JIADA CPSS-2", 22.78546, 86.16393, "transformer"],
-    ["JIADA DT", 22.78536, 86.16391, "transformer"],
-    ["JIVANPUR DT", 22.7807, 86.02356, "transformer"],
-    ["JJCO DT", 22.78777, 86.14927, "transformer"],
-    ["JJCO PRESS METAL DT", 22.78795, 86.14885, "transformer"],
-    ["JSR CHEMICAL & MINERALS DT", 22.80135, 86.11506, "transformer"],
-    ["K.K STEEL DT", 22.79443, 86.12604, "transformer"],
-    ["KALPANAPURI CPSS", 22.78758, 86.15273, "transformer"],
-    ["KALPANAPURI DT", 22.78572, 86.15235, "transformer"],
-    ["KANCHAN ENGG. DT", 22.78958, 86.14239, "transformer"],
-    ["Kerala Public School DT", 22.82094, 86.09408, "transformer"],
-    ["KHEMKHA DT", 22.79806, 86.11808, "transformer"],
-    ["KOLABIRA DT", 22.79063, 86.02699, "transformer"],
-    ["K-PURI DT 1", 22.78581, 86.15238, "transformer"],
-    ["KRD DT", 22.79549, 86.13206, "transformer"],
-    ["KRISHNA NAGAR DT", 22.78238, 86.12447, "transformer"],
-    ["KUNJ VIHAR DT", 22.79696, 86.14215, "transformer"],
-    ["LAKSMI MEDHA DT", 22.78627, 86.15462, "transformer"],
-    ["LAL BUILDING DT", 22.81466, 86.10262, "transformer"],
-    ["Lal Building DT 500kVA", 22.81487, 86.10257, "transformer"],
-    ["LAL CHAND & SONS DT", 22.7863, 86.13321, "transformer"],
-    ["LIC COLONY DT", 22.7973, 86.15609, "transformer"],
-    ["LIC DT-1", 22.78535, 86.16903, "transformer"],
-    ["LIC DT-2", 22.78535, 86.16902, "transformer"],
-    ["LOKNATH COMPLEX DT", 22.78683, 86.16483, "transformer"],
-    ["Lovely Engg DT/PH5", 22.82294, 86.08916, "transformer"],
-    ["LUPUNGDIH DT", 22.76878, 86.10261, "transformer"],
-    ["M 5 DT", 22.78642, 86.16995, "transformer"],
-    ["M.P COMPLEX DT", 22.78676, 86.16365, "transformer"],
-    ["M.P MOTI DT", 22.784, 86.17144, "transformer"],
-    ["M.P.NAGINA DT", 22.78692, 86.17042, "transformer"],
-    ["M.V. ENGG. DT", 22.79907, 86.12171, "transformer"],
-    ["M/S NATIONAL DT", 22.78603, 86.13835, "transformer"],
-    ["MA TYPE", 22.78879, 86.15468, "transformer"],
-    ["MAA BHAWANI DT", 22.79534, 86.12858, "transformer"],
-    ["MAA GAYATRI DT", 22.82921, 86.06858, "transformer"],
-    ["MAA KALI DT", 22.78889, 86.16883, "transformer"],
-    ["MAA SANTOSHI DT", 22.78842, 86.14225, "transformer"],
-    ["MAA SHAKTI DT", 22.79838, 86.12076, "transformer"],
-    ["MADHU ENCLAVE DT", 22.80534, 86.12451, "transformer"],
-    ["MAHABIR NAGAR DT", 22.77659, 86.16489, "transformer"],
-    ["MAHAMAYA DT", 22.78802, 86.16229, "transformer"],
-    ["MAKERS INDUSTRIES DT", 22.77883, 86.13788, "transformer"],
-    ["MAMAJEE COMPLEX DT", 22.81422, 86.10427, "transformer"],
-    ["MEDIA MAGIX DT", 22.80323, 86.14028, "transformer"],
-    ["MERUDIH DT", 22.78682, 86.11591, "transformer"],
-    ["METRO INDUSTRIES DT", 22.79109, 86.14597, "transformer"],
-    ["MIG DT-1", 22.77669, 86.15858, "transformer"],
-    ["MIG DT-2", 22.77673, 86.15858, "transformer"],
-    ["MIRAJ AUTO DT", 22.79408, 86.133, "transformer"],
-    ["MITHILA MOTORS DT U-1", 22.79121, 86.145, "transformer"],
-    ["MITHILA MOTORS U-3 DT", 22.7907, 86.14979, "transformer"],
-    ["MITHILA MOTORS WORKS DT", 22.79629, 86.12293, "transformer"],
-    ["MODERN CORPORATION DT", 22.78662, 86.14601, "transformer"],
-    ["MOHANPUR DT", 22.84551, 86.10431, "transformer"],
-    ["MOHOLDIH DT", 22.77065, 86.09886, "transformer"],
-    ["MS MALL DT", 22.78761, 86.15916, "transformer"],
-    ["MTC DT", 22.81013, 86.11262, "transformer"],
-    ["Multi-Tech DT Ph#1", 22.78647, 86.13686, "transformer"],
-    ["MUSRIKUDAR DT", 22.83999, 86.10411, "transformer"],
-    ["NALIN RUBBER DT", 22.80383, 86.11806, "transformer"],
-    ["NALIN RUBBER UNIT-3 DT", 22.80459, 86.11597, "transformer"],
-    ["NARBHERAM HERO DT", 22.7996, 86.12988, "transformer"],
-    ["NARBHERAM MOTORS TVS", 22.8035, 86.12088, "transformer"],
-    ["NEW TOWN COMMERCIAL DT", 22.8271, 86.06432, "transformer"],
-    ["NEXA DT", 22.79237, 86.14176, "transformer"],
-    ["NU- CARBONICS DT", 22.80133, 86.10674, "transformer"],
-    ["NUTANDIH DT", 22.77278, 86.08616, "transformer"],
-    ["ORBIT DT-1", 22.79087, 86.16546, "transformer"],
-    ["ORBIT DT-2", 22.7907, 86.16579, "transformer"],
-    ["PANCSHEEL ENCLAVE DT", 22.79541, 86.14007, "transformer"],
-    ["PANCSHEEL TOWER DT", 22.80424, 86.12254, "transformer"],
-    ["PARAMOUNT DT", 22.78713, 86.13339, "transformer"],
-    ["PARINA METAL DT", 22.78617, 86.1493, "transformer"],
-    ["PARSURAM DT", 22.80341, 86.11695, "transformer"],
-    ["PASA SALES DT", 22.80708, 86.1158, "transformer"],
-    ["PENDRABEDA DT", 22.85391, 86.07124, "transformer"],
-    ["PENWELL PLASTIC", 22.78103, 86.13613, "transformer"],
-    ["PH# 4 DT", 22.80342, 86.10625, "transformer"],
-    ["PH#1 DT", 22.78539, 86.13739, "transformer"],
-    ["PH#2", 22.78942, 86.1501, "transformer"],
-    ["PIONEER BUILDER DT", 22.78672, 86.16468, "transformer"],
-    ["POWER DRIVE DT", 22.7905, 86.13705, "transformer"],
-    ["PRABHAT PARK DT", 22.78823, 86.16932, "transformer"],
-    ["PRAMANIK ABHIYANTRAN DT", 22.78687, 86.15111, "transformer"],
-    ["PRASIDH SINGH DT-1", 22.78383, 86.16887, "transformer"],
-    ["PRASIDH SINGH DT2", 22.78408, 86.16889, "transformer"],
-    ["PRECISION AUTO DT", 22.79087, 86.13722, "transformer"],
-    ["PRECISION TOOLS DT", 22.79026, 86.13824, "transformer"],
-    ["PRINCE METAL DT", 22.78208, 86.14433, "transformer"],
-    ["PROMISE DT", 22.77693, 86.139, "transformer"],
-    ["QUALITY STEEL DT", 22.7893, 86.14969, "transformer"],
-    ["R P SINHA ANUPAM BIHAR DT", 22.80261, 86.1261, "transformer"],
-    ["R.K.M.N DT", 22.7834, 86.1412, "transformer"],
-    ["R.P ENTERPRISE DT", 22.78397, 86.13648, "transformer"],
-    ["R20 DT", 22.78888, 86.17028, "transformer"],
-    ["RAIMARA DT", 22.86844, 86.08319, "transformer"],
-    ["RAIN BASERA DT", 22.79401, 86.15889, "transformer"],
-    ["RAJ MACHINING DT", 22.79429, 86.12872, "transformer"],
-    ["RAJESH SINGH DT", 22.79567, 86.13684, "transformer"],
-    ["RAJGAON DT", 22.77622, 86.08314, "transformer"],
-    ["RAJIV ASSOCIATE DT", 22.78745, 86.14623, "transformer"],
-    ["Rajmahal SK DT", 22.6971, 85.93211, "transformer"],
-    ["RAMCHANDERPUR DT", 22.82871, 86.08018, "transformer"],
-    ["RAMESHWARAM DT-1", 22.80364, 86.12451, "transformer"],
-    ["RANI SATI PIPE DT", 22.78252, 86.12487, "transformer"],
-    ["RANI SATI PLASTIC DT", 22.80733, 86.11097, "transformer"],
-    ["RANTECH DT", 22.78834, 86.14507, "transformer"],
-    ["RAPCHA DT", 22.84587, 86.08078, "transformer"],
-    ["RAX HYDRALLICS DT", 22.82515, 86.07368, "transformer"],
-    ["RAX HYDRULIC DT /LS", 22.77497, 86.13788, "transformer"],
-    ["RD 5&6 DT 2", 22.7785, 86.16134, "transformer"],
-    ["RD 5&6 DT1", 22.77865, 86.16155, "transformer"],
-    ["Reliable Bricks DT/PH5", 22.82223, 86.08867, "transformer"],
-    ["RELIANCE JIO/VIDHUT DT", 22.78906, 86.14345, "transformer"],
-    ["RENAULT DT", 22.80288, 86.12536, "transformer"],
-    ["RISHI APARTMENT DT", 22.79531, 86.14196, "transformer"],
-    ["ROAD NO. 32 DT", 22.7802, 86.16627, "transformer"],
-    ["ROAD NO.14 DT", 22.77418, 86.1634, "transformer"],
-    ["ROHAN ENT. DT", 22.78543, 86.13572, "transformer"],
-    ["ROY BROTHERS DT", 22.79064, 86.1394, "transformer"],
-    ["S -TYPE DT2", 22.78845, 86.1568, "transformer"],
-    ["S&S IND. DT /PH#5", 22.82031, 86.08826, "transformer"],
-    ["S.S WIRE DT", 22.78573, 86.14081, "transformer"],
-    ["SACHDEVA ENGG. DT", 22.79049, 86.14019, "transformer"],
-    ["SAHARA GARDEN 250 KVA DT-1", 22.78202, 86.15653, "transformer"],
-    ["SAHARA 500 KVA DT", 22.78149, 86.15423, "transformer"],
-    ["SAHARA GARDEN 315 KVA DT-2", 22.782, 86.15653, "transformer"],
-    ["SAI AANCHAL DT", 22.80427, 86.12272, "transformer"],
-    ["SAI KALPANA DT", 22.80934, 86.12726, "transformer"],
-    ["SAI KRIPA DT", 22.78336, 86.12393, "transformer"],
-    ["SAI PATH DT-1", 22.7776, 86.1567, "transformer"],
-    ["SAI PATH DT2", 22.77739, 86.15615, "transformer"],
-    ["SALAMPATHAR DT", 22.86369, 86.09347, "transformer"],
-    ["SALDIH DT", 22.78118, 86.01737, "transformer"],
-    ["Saldih DT Ph#5", 22.82089, 86.09417, "transformer"],
-    ["SAMBHAV COMPLEX DT", 22.79192, 86.16632, "transformer"],
-    ["SAMRIDHI APPARTMRENT DT", 22.79424, 86.16227, "transformer"],
-    ["Samudayik Bhawan SK DT", 22.70089, 85.93512, "transformer"],
-    ["SANJEEVANI DT", 22.79021, 86.16702, "transformer"],
-    ["Sanmati Industries DT,PH5", 22.81785, 86.08899, "transformer"],
-    ["Sarita Complex", 22.78685, 86.1691, "transformer"],
-    ["SARKAR ENTPRISES DT", 22.78353, 86.1349, "transformer"],
-    ["SDS POLYTUBE DT", 22.7878, 86.13284, "transformer"],
-    ["SHALDIH BASTI DT 100kVA", 22.79412, 86.15489, "transformer"],
-    ["SHALDIH BASTI DT 250kVA", 22.79409, 86.15489, "transformer"],
-    ["SHIB AUTO DT", 22.78427, 86.14079, "transformer"],
-    ["SHIV SHAKTI DT", 22.77702, 86.13284, "transformer"],
-    ["SHIVA NURSING HOME DT", 22.78529, 86.17146, "transformer"],
-    ["SHIVALIK APARTMENT DT (RJ CONS.)", 22.77874, 86.1555, "transformer"],
-    ["SHIVALIK INDUSTRIES DT", 22.79039, 86.13679, "transformer"],
-    ["SHIVDHAM DT", 22.78, 86.15406, "transformer"],
-    ["SHIVRANJANI DT", 22.79032, 86.15612, "transformer"],
-    ["Shreja DT", 22.82833, 86.06986, "transformer"],
-    ["SHREYA APARTMENT DT", 22.80522, 86.12376, "transformer"],
-    ["SHRI VINAYAK ENT. DT", 22.78208, 86.14311, "transformer"],
-    ["Sichaivibhag SK DT", 22.69863, 85.93065, "transformer"],
-    ["SIGMA VIDHUT DT", 22.7873, 86.1497, "transformer"],
-    ["SINGHBHOOM MACHINO DT", 22.78491, 86.13779, "transformer"],
-    ["SITARAMPUR DT", 22.77987, 86.11297, "transformer"],
-    ["SOM. ENGG. DT", 22.79914, 86.12128, "transformer"],
-    ["SOSOGODA DT", 22.87904, 86.08693, "transformer"],
-    ["SOUTH BIHAR PLASTIC DT", 22.79006, 86.14408, "transformer"],
-    ["SPACEAGE DT", 22.78134, 86.1457, "transformer"],
-    ["SRINATH COLLEGE DT", 22.78927, 86.16076, "transformer"],
-    ["SRINATH HOMES DT-1", 22.78412, 86.15486, "transformer"],
-    ["SRINATH HOMES DT-2", 22.78415, 86.15495, "transformer"],
-    ["SRIRAM & SOURYA DT", 22.78284, 86.14303, "transformer"],
-    ["STAR AUTO DT", 22.7917, 86.13673, "transformer"],
-    ["S-TYPE DT-1", 22.78831, 86.15685, "transformer"],
-    ["SUB URBAN DT", 22.80755, 86.10947, "transformer"],
-    ["SUBASH PARK DT", 22.7852, 86.17039, "transformer"],
-    ["SUDHAPUR DT", 22.87855, 86.09437, "transformer"],
-    ["SUMITRA ENTERPRISE DT", 22.78882, 86.149, "transformer"],
-    ["SUN RESIDENCY", 22.81769, 86.10395, "transformer"],
-    ["SUNDRAM DT", 22.7779, 86.13587, "transformer"],
-    ["Sunfab DT Ph#4", 22.81003, 86.10728, "transformer"],
-    ["SUNTECH INDUSTRIES DT L/S", 22.82642, 86.07686, "transformer"],
-    ["SURAJ HOSPITALITY DT", 22.78962, 86.15177, "transformer"],
-    ["SWASTIK DT", 22.78994, 86.14584, "transformer"],
-    ["SWIFT STRIPS DT", 22.78352, 86.12961, "transformer"],
-    ["TARA APARTMENT DT", 22.79613, 86.14208, "transformer"],
-    ["TARUN TOOLS DT", 22.78932, 86.15864, "transformer"],
-    ["TECHMACHINO DT", 22.77672, 86.13399, "transformer"],
-    ["TECHMECHO DT", 22.78885, 86.14182, "transformer"],
-    ["TIRUPATI DT", 22.78641, 86.14635, "transformer"],
-    ["TISCO SOCIETY DT-1", 22.80278, 86.12764, "transformer"],
-    ["TISCO SOCIETY DT-2", 22.80416, 86.12465, "transformer"],
-    ["TRINETRAM DT", 22.79129, 86.15991, "transformer"],
-    ["TRIPURARI COLONY DT", 22.79414, 86.15719, "transformer"],
-    ["UDAYPUR DT", 22.77145, 86.09419, "transformer"],
-    ["UNIVERSAL PAINT DT", 22.80702, 86.10765, "transformer"],
-    ["UPPERBEDA DT", 22.82759, 86.08063, "transformer"],
-    ["UTKAL (ALFA) AUTO COACH DT", 22.80087, 86.12872, "transformer"],
-    ["VARUN ENT. DT", 22.78351, 86.14404, "transformer"],
-    ["VIBHA HOMES DT", 22.77929, 86.15447, "transformer"],
-    ["VINAYAK GARDEN DT", 22.80725, 86.11996, "transformer"],
-    ["VISHWAKARMA DT", 22.78894, 86.14532, "transformer"],
-    ["VIVEK VIHAR DT", 22.80489, 86.12882, "transformer"],
-    ["XITE", 22.83429, 86.08965, "transformer"],
-    ["RAMESHWARAM DT-2", 22.80364, 86.12451, "transformer"],
-    ["11 KV CPSS AIADA", 22.7854, 86.1638, "transformer"],
-    ["6.6 KV CPSS AIADA", 22.78547, 86.16393, "transformer"],
-    ["6.6KV RMU JAI PRAKASH UDYAN/S-11 SOURCE", 22.78698, 86.17233, "rmu"],
-    ["630 KVA DT RMU ,CPSS#3 Kalpnapuri,Ph#2 DOMESTIC RING", 22.78756, 86.15272, "rmu"],
-    ["A S N Developer RMU PH1-2/DM", 22.78494, 86.17243, "rmu"],
-    ["ADARSH NAGAR RMU GAMHARIA", 22.81663, 86.10371, "rmu"],
-    ["ADHUNIK CONST. RMU PH#2 DM", 22.78855, 86.16322, "rmu"],
-    ["Aditya Enclave RMU PH!/Dom", 22.77902, 86.15521, "rmu"],
-    ["Aditya Garden RMU", 22.79745, 86.14414, "rmu"],
-    ["Aditya Garden RMU PH#2/R-1", 22.79246, 86.14224, "rmu"],
-    ["AIADA RMU PH1-2/DM", 22.78562, 86.16409, "rmu"],
-    ["AK ASSOCIATE RMU", 22.78875, 86.16893, "rmu"],
-    ["ALmament Reagent RMU", 22.77741, 86.13508, "rmu"],
-    ["AMVI POLYTEC RMU", 22.78153, 86.13932, "rmu"],
-    ["ANAC RMU PH#2 /DOM", 22.78732, 86.15331, "rmu"],
-    ["ANIL SYSTEM RMU PH#2/R-3", 22.78983, 86.1469, "rmu"],
-    ["Anjaya Ispat Unit-1 RMU", 22.81408, 86.08562, "rmu"],
-    ["Anjaya Ispat Unit-2 RMU", 22.81693, 86.08837, "rmu"],
-    ["ANUPAM BIHAR/ R.P SINHA RMU", 22.80237, 86.12659, "rmu"],
-    ["ANVIL CABLE RMU LS", 22.8296, 86.06824, "rmu"],
-    ["Apex Auto RMU PH 7/R-2", 22.79789, 86.13004, "rmu"],
-    ["Aruneshwar RMU LS", 22.82677, 86.07372, "rmu"],
-    ["Ashirwad Steel RMU PH5/R-1/20", 22.81783, 86.08635, "rmu"],
-    ["Ashiyana trade centre RMU PH1-2/DM", 22.79053, 86.1542, "rmu"]
 
+        var icons = {
+            transformer: L.icon({ iconUrl: 'https://img.icons8.com/color/48/transformer.png', iconSize: [20, 20] }),
+            rmu: L.icon({ iconUrl: 'https://img.icons8.com/color/48/electricity.png', iconSize: [20, 20] }),
+            substation: L.icon({ iconUrl: 'https://img.icons8.com/color/48/power-plant.png', iconSize: [20, 20] }),
+            user: L.icon({ iconUrl: 'https://img.icons8.com/color/48/user-location.png', iconSize: [20, 20] })
+        };
+
+        // Equipment array with 177 DTs from recent data
+        var equipment = [
+            ["250 DT at Durga steel PH1/R-1/DT", 22.78597, 86.134, "transformer"],
+            ["250 DT at Paramount Auto PH1/R-1", 22.78713, 86.13339, "transformer"],
+            ["100 DT ,SDS Polytube,Ph#1", 22.7878, 86.13284, "transformer"],
+            ["250 DT at Lalchand& Sons PH1/R-1/DT-", 22.7863, 86.13321, "transformer"],
+            ["250 Swift strip /DT/R-1/PH1", 22.78352, 86.12961, "transformer"],
+            ["100 DT Ranisati Pipe,Ph#1", 22.78252, 86.12487, "transformer"],
+            ["315 Banpriya /DT/R-1/PH2", 22.78365, 86.12689, "transformer"],
+            ["250 DT at Sai Kripa PH-1/", 22.78336, 86.12393, "transformer"],
+            ["100 DT at Krishna Nagar PH-1/", 22.78238, 86.12447, "transformer"],
+            ["315 D R SON'S", 22.78144, 86.13651, "transformer"],
+            ["250 DT Bihar Insecticide Phase 1/R-1", 22.7822, 86.13768, "transformer"],
+            ["250 R P ENTERPRISE", 22.78397, 86.13648, "transformer"],
+            ["100 DT at Rohan Ent PH1/R-1/DT", 22.78543, 86.13572, "transformer"],
+            ["100 DT Associated Engifeb ,Ph#1", 22.78528, 86.13542, "transformer"],
+            ["100 DT Sarkar Ent/Phase 1/R-1", 22.78353, 86.1349, "transformer"],
+            ["250 DT at Mulitech Ph-1/ PH1/R-1/DT-", 22.78647, 86.13686, "transformer"],
+            ["100 DT PHASE#1", 22.78539, 86.13739, "transformer"],
+            ["100 DT at Jai Matadi PH1/", 22.77732, 86.13105, "transformer"],
+            ["315 DT at Technomachino PH1", 22.77672, 86.13399, "transformer"],
+            ["100 DT at Jai Mata Di", 22.77732, 86.13105, "transformer"],
+            ["100 DT at Hindustan Foundary PH1", 22.77594, 86.13302, "transformer"],
+            ["315 Atul DT", 22.77817, 86.1325, "transformer"],
+            ["JSR MINERALS DT", 22.80135, 86.11506, "transformer"],
+            ["250 DT at Shiv Shakti PH1", 22.77702, 86.13284, "transformer"],
+            ["250 DT at Sundaram PH1/R-1/DT-", 22.7779, 86.13587, "transformer"],
+            ["250 Bhardwaj Brother Ph-1", 22.77774, 86.13404, "transformer"],
+            ["250 DT AT Promise Ph-1", 22.77693, 86.139, "transformer"],
+            ["100 DT at RAX HYDRULICS", 22.77497, 86.13788, "transformer"],
+            ["250 MAKERS INDUSTRIES", 22.77883, 86.13788, "transformer"],
+            ["250 A V Engg (Precon) DT", 22.77626, 86.13733, "transformer"],
+            ["250 DT ,Singhbhoom Machino, Ph1 /R-2", 22.78491, 86.13779, "transformer"],
+            ["250 DT at M/s National PH1/R-2", 22.78603, 86.13835, "transformer"],
+            ["100 DT S S WIRE", 22.78573, 86.14081, "transformer"],
+            ["250 DT Ganesh Minerals PH1/R-2", 22.78346, 86.14476, "transformer"],
+            ["100 DT at Varun Ent PH1/R-1/DT", 22.78351, 86.14404, "transformer"],
+            ["100 DT at spaceage PH1/R-2", 22.78134, 86.1457, "transformer"],
+            ["63 DT at Prince Metal PH1/R-1/DT", 22.78208, 86.14433, "transformer"],
+            ["315 SRIRAM & SOURYA DT", 22.78284, 86.14303, "transformer"],
+            ["250 R 20 DT", 22.78888, 86.17028, "transformer"],
+            ["100 DT at Shri Vinayak Ent PH1/R-2/DT-14", 22.78208, 86.14311, "transformer"],
+            ["250 DT at R.K.M N PH1/R-2", 22.7834, 86.1412, "transformer"],
+            ["250 DT SHIB AUTO PH/1", 22.78427, 86.14079, "transformer"],
+            ["250 DT DAV PH2/ DOMESTIC RING", 22.77673, 86.15535, "transformer"],
+            ["100 M5 DT", 22.78642, 86.16995, "transformer"],
+            ["100 DT R J Const Adityapur-2 Dom", null, null, "transformer"],
+            ["250 Sai Path DT-1/ DOM", 22.7776, 86.1567, "transformer"],
+            ["250 Sai Path DT-2/ DOM", 22.77739, 86.15615, "transformer"],
+            ["500 MIG 1 DT PH2/ DOMESTIC RING", 22.77669, 86.15858, "transformer"],
+            ["250 MIG 2 PH2/ DOMESTIC RING", 22.77673, 86.15858, "transformer"],
+            ["250 Adharsila Home DT/R-4/PH2-PH1", 22.77923, 86.16203, "transformer"],
+            ["250 DT AT road no-5&6 Adityapur-2", 22.77865, 86.16155, "transformer"],
+            ["500 DT AT road no-5&6 Adityapur-2", 22.7785, 86.16134, "transformer"],
+            ["250 Sahara Garden DT/AD-2/DOM RING", 22.78202, 86.15653, "transformer"],
+            ["500 Sahara Garden DT/AD-2/DOM RING", 22.78149, 86.15423, "transformer"],
+            ["315 Sahara Garden DT/AD-2/DOM RING", 22.782, 86.15653, "transformer"],
+            ["250 Shiv dham Appt. DT/AD-2/DOM RING", 22.78, 86.15406, "transformer"],
+            ["315 VIBHA HOMES DT Adityapur-2", 22.77929, 86.15447, "transformer"],
+            ["315 DT MAHABIR NAGAR ROAD NO 10", null, null, "transformer"],
+            ["315 DT RD 31/32", 22.7802, 86.16627, "transformer"],
+            ["250 Reliance Jio/Vidyut Insulation Ph#2", 22.78906, 86.14345, "transformer"],
+            ["250 Viswakarma DT Ph#2/R1", 22.78894, 86.14532, "transformer"],
+            ["250 DT KANCHAN ENG./PH-2/R1", 22.78958, 86.14239, "transformer"],
+            ["100 MAA SANTOSHI DT", 22.78842, 86.14225, "transformer"],
+            ["250 DT Astha Ferrotech Ph#2/ R 1", 22.7895, 86.1389, "transformer"],
+            ["250 Techmecho Ph#2/ R 1", 22.78885, 86.14182, "transformer"],
+            ["250 Precision Tools DT PH2/R1", 22.79026, 86.13824, "transformer"],
+            ["250 Precision Auto Ph#2/ R 1", 22.79087, 86.13722, "transformer"],
+            ["100 G B ENTERPRISES Ph#2/ R 1", 22.78938, 86.14067, "transformer"],
+            ["250 Power Drive DT/ Ph-2/R1", 22.7905, 86.13705, "transformer"],
+            ["250 Shivalik INDUSTRIES DT", 22.79039, 86.13679, "transformer"],
+            ["315 STAR AUTO", 22.7917, 86.13673, "transformer"],
+            ["250 DT Sachdeva EnggPh#2/ R 1", 22.79049, 86.14019, "transformer"],
+            ["100 DT ROY BROTHERS/PH-2/R1", 22.79064, 86.1394, "transformer"],
+            ["250 Suraj Auto PH#2 /R-3", null, null, "transformer"],
+            ["250 NEXA DT", 22.79237, 86.14176, "transformer"],
+            ["250 Aditya Garden DT-1", 22.79485, 86.14341, "transformer"],
+            ["250 Aditya Garden DT-2", 22.79613, 86.14359, "transformer"],
+            ["315 Aditya Garden DT-3", 22.79749, 86.14415, "transformer"],
+            ["315 Rishi Appartment DT", 22.79531, 86.14196, "transformer"],
+            ["250 Anand Vihar DT", 22.79683, 86.14043, "transformer"],
+            ["250 TARA appartment DT", 22.79613, 86.14208, "transformer"],
+            ["250 Kunj Vihar DT", 22.79696, 86.14215, "transformer"],
+            ["100 PANCHSHEEL ENCLAVE", 22.79541, 86.14007, "transformer"],
+            ["100 DT South Bihar Plastic Ph#2/ R 1", 22.79006, 86.14408, "transformer"],
+            ["250 Imperial Auto DT", 22.7906, 86.14311, "transformer"],
+            ["100 DT Adityapur Dies PH#2 /R-3", 22.7898, 86.14588, "transformer"],
+            ["100 DT SWASTIK PH#2", 22.78994, 86.14584, "transformer"],
+            ["250 DT ,Metro Industries PH#2 /R-3", 22.79109, 86.14597, "transformer"],
+            ["250 DT at M/s Mithila Motors U-3", 22.7907, 86.14979, "transformer"],
+            ["250 Mithila Motors u-1 DT/R-3/PH2", 22.79121, 86.145, "transformer"],
+            ["100 PH#2 DT", 22.78942, 86.1501, "transformer"],
+            ["100 DT Quality Steel/PH2/R-3", 22.7893, 86.14969, "transformer"],
+            ["100 DT Pramanik Abhiyantran PH2/R-2", 22.78687, 86.15111, "transformer"],
+            ["250 DT,Sigma Vidyut, PH#2 R-2", 22.7873, 86.1497, "transformer"],
+            ["250 DT Auto Rubber PH2/R-2", 22.78654, 86.14951, "transformer"],
+            ["250 DT Parina Metal DT/R-2/PH2", 22.78617, 86.1493, "transformer"],
+            ["100 TIRUPATI DT", 22.78641, 86.14635, "transformer"],
+            ["250 DT, Modern Corporation Ph#2/R -2", 22.78662, 86.14601, "transformer"],
+            ["250 DT at M/s Automech Engg PH2/R-2", 22.78718, 86.14719, "transformer"],
+            ["100 DT Agro Mills PH#/2", 22.78737, 86.14729, "transformer"],
+            ["250 DT at Rajiv Associate PH2/R-2", 22.78745, 86.14623, "transformer"],
+            ["100 DT ,Bajaj Faideal,Ph#2/ R- 2", 22.78705, 86.14393, "transformer"],
+            ["250 Hindustan Polytex DT/R-2/PH2", 22.7881, 86.14353, "transformer"],
+            ["100 DT, Arora Foods,Ph#2/R -2", 22.78841, 86.14509, "transformer"],
+            ["100 SUMITRA ENTERPRISE DT PH#2", 22.78882, 86.149, "transformer"],
+            ["250 Autocraft DT Ph#4", 22.80457, 86.11151, "transformer"],
+            ["250 SALDIH BASTI -1 DT", 22.79412, 86.15489, "transformer"],
+            ["100 SALDIH BASTI -2 DT", 22.79409, 86.15489, "transformer"],
+            ["250 Raain Basera DT", 22.79401, 86.15889, "transformer"],
+            ["250 SRINATH B-Ed college DT", 22.78927, 86.16076, "transformer"],
+            ["100 TRINETRAM TOWER DT", 22.79129, 86.15991, "transformer"],
+            ["250 DT S-type PH#2/ DOM RING", 22.78831, 86.15685, "transformer"],
+            ["500 DT S-type PH#2/ DOM RING", 22.78845, 86.1568, "transformer"],
+            ["100 M.S MALL DT PH#2", 22.78912, 86.15588, "transformer"],
+            ["250 DT IMLI CHOWK PH#2", 22.78796, 86.15526, "transformer"],
+            ["250 DT at M A Type, PH#2/ DOM RING", 22.7878, 86.15565, "transformer"],
+            ["630 Ashiyana DOMESTIC RING", 22.79364, 86.12838, "transformer"],
+            ["250 DT Shiv Ranjani PH2/DOM", 22.78803, 86.15362, "transformer"],
+            ["63 DT TARUN TOOLS PH#2/ DOM", 22.78945, 86.15343, "transformer"],
+            ["1000 DT ,CPSS#2 Ph#2/ DOM RING", 22.78756, 86.15272, "transformer"],
+            ["630 DT ,CPSS#1 Ph#2/ DOM RING", 22.78965, 86.15249, "transformer"],
+            ["250 DT JIADA PH#2", 22.78977, 86.15136, "transformer"],
+            ["250 C T Classic DT Adityapur /DOM", 22.79023, 86.15167, "transformer"],
+            ["250 MAHAMAYA DT Adityapur /DOM", 22.79089, 86.15198, "transformer"],
+            ["250 M P COMPLEX", 22.79145, 86.15278, "transformer"],
+            ["250 Poineer Builder DT/R-4/PH2-PH1", 22.79123, 86.15345, "transformer"],
+            ["100 Loknath Complex DT", 22.79178, 86.15412, "transformer"],
+            ["250 Orbit DT-1 PH#2/ DOMESTIC RING", 22.79234, 86.15467, "transformer"],
+            ["250 Orbit DT-2 PH#2/ DOMESTIC RING", 22.79289, 86.15523, "transformer"],
+            ["250 DT RD NO-5 Hariomnagar", 22.79345, 86.15578, "transformer"],
+            ["100 SAMBHAV COMPLEX DT", 22.79401, 86.15634, "transformer"],
+            ["100 Samridhi Appartment", 22.79456, 86.15689, "transformer"],
+            ["250 JJCO PRESS METAL DT", 22.79512, 86.15745, "transformer"],
+            ["100 DT Astha Arcade", 22.79347, 86.1641, "transformer"],
+            ["100 DT bank colony-2", 22.79567, 86.15801, "transformer"],
+            ["250 DT BANK COLONY -1", 22.79623, 86.15856, "transformer"],
+            ["100 Aditya Green DT", 22.79678, 86.15912, "transformer"],
+            ["250 Chitrakut Appartment DT", 22.79734, 86.15967, "transformer"],
+            ["250 Sanjeevani DT", 22.79789, 86.16023, "transformer"],
+            ["250 MAA kali DT", 22.79845, 86.16078, "transformer"],
+            ["250 DT J. PRAKASH NAGAR", 22.79901, 86.16134, "transformer"],
+            ["250 DT Jai Prakash Udyan 6.6 kv", 22.78698, 86.17233, "transformer"],
+            ["630 DT at IDTR Complex PH2/ DOM", 22.79956, 86.16189, "transformer"],
+            ["250 DT Prabhat Park PH2-PH1", 22.80012, 86.16245, "transformer"],
+            ["250 R-20DT PH#2/ DOMESTIC RING", 22.78888, 86.17028, "transformer"],
+            ["250 SARITA COMPLEX DT PH#2/ DOMESTIC RING", 22.80067, 86.16301, "transformer"],
+            ["250 KAV DT AT MP NAGINA PH#2/ DOM", 22.80123, 86.16356, "transformer"],
+            ["250 DT-1 PRASIDH SINGH", 22.80178, 86.16412, "transformer"],
+            ["250 DT-2 PRASIDH SINGH", 22.80234, 86.16467, "transformer"],
+            ["250 LIC DT 1 PH2/ DOMESTIC RING", 22.80289, 86.16523, "transformer"],
+            ["250 LIC DT 2 PH2/ DOMESTIC RING", 22.80345, 86.16578, "transformer"],
+            ["100 DT AT M-5 PH#2/ DOMESTIC RING", 22.78642, 86.16995, "transformer"],
+            ["250 Shiva Nursingh DT PH2/ DOM", 22.80401, 86.16634, "transformer"],
+            ["250 SUBASH PARK DT", 22.80456, 86.16689, "transformer"],
+            ["250 M P Moti DT/DOM", 22.80512, 86.16745, "transformer"],
+            ["250 DT HIRA TOWER", 22.80567, 86.16801, "transformer"],
+            ["250 DT ANAC DOMESTIC RING", 22.80623, 86.16856, "transformer"],
+            ["KALPANAPURI 500 DT", 22.78756, 86.15272, "transformer"],
+            ["1000 CPSS KALPANAPURI 11", 22.78756, 86.15272, "transformer"],
+            ["250 SRINATH HOMES DT", 22.80678, 86.16912, "transformer"],
+            ["500 SRINATH HOMES DT", 22.80734, 86.16967, "transformer"],
+            ["LAXMI MEDHA APPARTMENT", 22.80789, 86.17023, "transformer"],
+            ["100 DT Mithila M. Works DT/PH7", 22.79956, 86.10801, "transformer"],
+            ["250 DT Som Engg /PH7", 22.80012, 86.10856, "transformer"],
+            ["250 DT DJ Enterprises DT/PH7", 22.80067, 86.10912, "transformer"],
+            ["250 DT AT M V Engg PH#7", 22.80123, 86.10967, "transformer"],
+            ["100 DT AT Amit Trading PH#7", 22.80178, 86.11023, "transformer"],
+            ["250 DT Balajee krishna AutoPh#7", 22.80234, 86.11078, "transformer"],
+            ["100 DT Nalin Rubber Ph#7", 22.80289, 86.11134, "transformer"],
+            ["250 Nalin Rubber Unit 3 DT PH 7", 22.80345, 86.11189, "transformer"],
+            ["100 DT Pasa sales,Ph#7", 22.80401, 86.11245, "transformer"],
+            ["100 DT at IDTR Boys Hostel PH7", 22.80456, 86.11301, "transformer"],
+            ["250 Seven STAR Ph#7", 22.80371, 86.11534, "transformer"],
+            ["250 DT Parsuraram Udyog PH7", 22.80512, 86.11356, "transformer"],
+            ["100 DT Garg Engg,Ph#7", 22.80567, 86.11412, "transformer"],
+            ["250 DT JSR Min & Cheml/R-1/PH7", 22.80135, 86.11506, "transformer"],
+            ["100 DT Chandra Chemical ,Ph#7", 22.80623, 86.11467, "transformer"],
+            ["250 KHEMKA FOOD DT", 22.80678, 86.11523, "transformer"],
+            ["250 DT K K Steel /PH7", 22.80734, 86.11578, "transformer"],
+            ["250 DT Raj machine /PH7", 22.80789, 86.11634, "transformer"],
+            ["630 ASHIYANA HOUSING DT-1, PH#7", 22.79364, 86.12838, "transformer"],
+            ["630 ASHIYANA HOUSING DT-2, PH#7", 22.79361, 86.12835, "transformer"],
+            ["630 ASHIYANA HOUSING DT-3, PH#7", 22.79359, 86.12832, "transformer"],
+            ["630 ASHIYANA HOUSING DT-4, PH#7", 22.79357, 86.1283, "transformer"],
+            ["250 DT Effective Marketing ,Ph#7", 22.80845, 86.11689, "transformer"],
+            ["250 DT at M/s Narbheram Motors TVS PH7", 22.80901, 86.11745, "transformer"],
+            ["250 Eastern Coating DT", 22.80956, 86.11801, "transformer"],
+            ["250 PANCHSHEEL TOWER DT", 22.79541, 86.14007, "transformer"],
+            ["100 Tisco Housing Society DT-2", 22.81012, 86.11856, "transformer"],
+            ["250 Tisco Housing Society DT-1", 22.81067, 86.11912, "transformer"],
+            ["250 Shreya Appartment DT", 22.81123, 86.11967, "transformer"],
+            ["250 DT MADHU ENCLAVE", 22.81178, 86.12023, "transformer"],
+            ["315 SAI AANCHAL DT", 22.81234, 86.12078, "transformer"],
+            ["250 RAMESHWARAM DT", 22.80364, 86.12451, "transformer"],
+            ["250 Golden Heritage DT", 22.81289, 86.12134, "transformer"],
+            ["250 SAI KALPANA DT", 22.81345, 86.12189, "transformer"],
+            ["250 Vivek Vihar DT", 22.80489, 86.12882, "transformer"],
+            ["250 Balram DT", 22.81401, 86.12245, "transformer"],
+            ["315 VINAYAK GARDEN DT", 22.81456, 86.12301, "transformer"],
+            ["250 Maa Bhawani DT PH#7", 22.81512, 86.12356, "transformer"],
+            ["100 DT ASIA PH7", 22.81567, 86.12412, "transformer"],
+            ["315 EMC S/S DT PH7", 22.81623, 86.12467, "transformer"],
+            ["315 EMC OFFICE DT PH7", 22.81678, 86.12523, "transformer"],
+            ["250 EMC GAIL GAS DT", 22.81734, 86.12578, "transformer"],
+            ["315 EMC-2 DT PH7", 22.81789, 86.12634, "transformer"],
+            ["250 DT Jalaram Forging PH7", 22.81845, 86.12689, "transformer"],
+            ["100 DT at Miraj Auto ,Ph 7", 22.81901, 86.12745, "transformer"],
+            ["100 RAJESH SINGH DT PH7", 22.81956, 86.12801, "transformer"],
+            ["250 DT Utkal Auto Coach PH7", 22.82012, 86.12856, "transformer"],
+            ["100 DT RENAULT PH7", 22.82067, 86.12912, "transformer"],
+            ["250 Narbheram Hero DT/PH7", 22.82123, 86.12967, "transformer"],
+            ["250 Diksha PH7", 22.82178, 86.13023, "transformer"],
+            ["250 DT Forum MALL,PH7", 22.82234, 86.13078, "transformer"],
+            ["25 Phase 7 S/S DT-2", null, null, "transformer"],
+            ["25 Phase # 7 S/S Station Trafo # 01", null, null, "transformer"],
+            ["100 DT at D.K ph7", null, null, "transformer"],
+            ["100 DT at KRD ph 7", null, null, "transformer"],
+            ["100 DT at M/s Nu-Carbonics PH7", null, null, "transformer"],
+            ["250 DEEPAK ENGG", 22.82345, 86.13134, "transformer"],
+            ["100 JAMSHEDPUR AUTO PH#4", 22.82401, 86.13189, "transformer"],
+            ["100 DT at M/s Universal Paint PH7", 22.82456, 86.13245, "transformer"],
+            ["100 DT Suburban Auto PH7", 22.82512, 86.13301, "transformer"],
+            ["250 DT at M/s Ranisati Plastic PH7", 22.82567, 86.13356, "transformer"],
+            ["100 BEBBCO Engg. DT", 22.82623, 86.13412, "transformer"],
+            ["250 DT AUTO CRAT PH7", 22.80457, 86.11151, "transformer"],
+            ["100 DT MANOJ ENTERPRISE PH7", 22.82678, 86.13467, "transformer"],
+            ["250 DT MEDIA MAGIX DT", 22.82734, 86.13523, "transformer"],
+            ["BALAJI KRISHNA DT", 22.80234, 86.11078, "transformer"],
+            ["100 SANFAB DT PH#7", 22.82789, 86.13578, "transformer"],
+            ["315 DAYAL PRATAP DT / GAM", 22.82845, 86.13634, "transformer"],
+            ["315 BAJRANG TOWER DT / GAM", 22.82901, 86.13689, "transformer"],
+            ["100 S&S IND. DT /PH#5", 22.82956, 86.13745, "transformer"],
+            ["250 BAJRANG LAL GOYAL DT /GAM", 22.83012, 86.13801, "transformer"],
+            ["250 Lal Building DT-1 / GAM", 22.83067, 86.13856, "transformer"],
+            ["100 DT GAURAV ENCLAVE", 22.83123, 86.13912, "transformer"],
+            ["250 MAMAJEE COMPLEX DT / GAM", 22.83178, 86.13967, "transformer"],
+            ["250 GANPATI MANSION DT / GAM", 22.83234, 86.14023, "transformer"],
+            ["100 SUN RESIDENCY DT/ GAM", 22.83289, 86.14078, "transformer"],
+            ["250 Durga Puja Maidan DT/PH5", 22.83345, 86.14134, "transformer"],
+            ["250 kerala Public school DT", 22.83401, 86.14189, "transformer"],
+            ["100 Sanmati Industries DT,PH5", 22.83456, 86.14245, "transformer"],
+            ["100 XIte DT/PH5", 22.83429, 86.08965, "transformer"],
+            ["100 GURIAN DT / LS", 22.83512, 86.14301, "transformer"],
+            ["100 BLUE STAR BRICKS DT / PH#5", 22.83567, 86.14356, "transformer"],
+            ["100 Akriti System DT,PH5", 22.83623, 86.14412, "transformer"],
+            ["250 Lovely Engg DT/PH5", 22.83678, 86.14467, "transformer"],
+            ["250 Reliable Bricks DT/PH5", 22.83734, 86.14523, "transformer"],
+            ["100 RAX HYDRULIC DT /LS", 22.77497, 86.13788, "transformer"],
+            ["250 BALAJI ENTERPRISE DT / LS", 22.83789, 86.14578, "transformer"],
+            ["MAA GAYTRI DT", 22.83845, 86.14634, "transformer"],
+            ["250 New Town Comercial,Large Sector", 22.83901, 86.14689, "transformer"],
+            ["100 SHREJA DT PH#5", 22.83956, 86.14745, "transformer"],
+            ["250 FOUJI DT", 22.84012, 86.14801, "transformer"],
+            ["63 RAGHUNATHPUR DT", 22.84067, 86.14856, "transformer"],
+            ["250 Maa sakti DT", 22.84123, 86.14912, "transformer"],
+            ["100 Agro mills DT", 22.78737, 86.14729, "transformer"],
+            ["Sunfeb DT Ph#4", 22.84178, 86.14967, "transformer"],
+            ["250 Suntech DT", 22.84234, 86.15023, "transformer"],
+            ["250 NUTECH AUTO", 22.84289, 86.15078, "transformer"],
+            ["LIC COLONY DT", 22.84345, 86.15134, "transformer"],
+            ["BANTANAGAR", 22.84401, 86.15189, "transformer"],
+            ["TRIPURARI COLONY", 22.84456, 86.15245, "transformer"],
+            ["RD NO. 14", 22.84512, 86.15301, "transformer"],
+            ["315 SAHARA GARDEN DT-4", 22.78149, 86.15423, "transformer"],
+            ["500 LAL BUILDING DT-2", 22.83067, 86.13856, "transformer"],
+            ["315 Verity precision industry", 22.84567, 86.15356, "transformer"],
+            ["100 Ph#7 DT -2", null, null, "transformer"],
+            ["250 PH#7 DT-1", null, null, "transformer"],
+            ["315 Salasar DT", 22.84623, 86.15412, "transformer"],
+            ["315 TISCO SOCEITY D.T.", 22.81067, 86.11912, "transformer"],
+            ["250 Maa Ambey DT", 22.84678, 86.15467, "transformer"],
+            ["315 DURGA ENCLAVE DT.", 22.84734, 86.15523, "transformer"],
+            ["500 SAHARA GARDEN DT", 22.78149, 86.15423, "transformer"],
+            ["315 Sahara DT-3", 22.782, 86.15653, "transformer"],
+            ["100 Harisunderpur DT", 22.84923, 86.09469, "transformer"],
+            ["100 Rapcha DT", 22.84587, 86.08078, "transformer"],
+            ["100 Champanager DT", 22.85246, 86.09037, "transformer"],
+            ["25 Chirugoda DT", 22.86357, 86.08994, "transformer"],
+            ["100 Raimara DT", 22.86844, 86.08319, "transformer"],
+            ["100 Pendrabeda DT", 22.85391, 86.07124, "transformer"],
+            ["100 Badamari DT", 22.86978, 86.09083, "transformer"],
+            ["100 Sudhapur DT", 22.87855, 86.09437, "transformer"],
+            ["100 Salampather DT", 22.86369, 86.09347, "transformer"],
+            ["100 Sosogoda DT", 22.87904, 86.08693, "transformer"],
+            ["100 Uperbeda DT", 22.82759, 86.08063, "transformer"],
+            ["100 Ramchanderpur DT", 22.82871, 86.08018, "transformer"],
+            ["100 Ghuring DT", 22.83039, 86.08128, "transformer"],
+            ["100 Chota hariharpur DT", 22.83176, 86.06092, "transformer"],
+            ["250 Baliguma DT", 22.79949, 86.02883, "transformer"],
+            ["100 Baliguma DT", 22.79949, 86.02883, "transformer"],
+            ["250 Bholadih DT", 22.80271, 86.03006, "transformer"],
+            ["100 Birbans DT", 22.8005, 86.03602, "transformer"],
+            ["100 Gopidih DT", 22.80926, 86.03146, "transformer"],
+            ["250 Mohanpur DT", 22.84551, 86.10431, "transformer"],
+            ["100 Musrikudar DT", 22.83999, 86.10411, "transformer"],
+            ["100 Sitarampur DT", 22.77987, 86.11297, "transformer"],
+            ["63 Lupungdih DT", 22.76878, 86.10261, "transformer"],
+            ["100 Mahuldih DT", 22.77065, 86.10645, "transformer"],
+            ["100 Udaypur DT", 22.77123, 86.10701, "transformer"],
+            ["100 Nutundih DT", 22.77178, 86.10756, "transformer"],
+            ["100 Rajgaon- DT", 22.77234, 86.10812, "transformer"],
+            ["100 Ganjia DT", 22.77289, 86.10867, "transformer"],
+            ["250 Manikbazar", 22.70012, 86.93345, "transformer"],
+            ["100 Chotakankra", 22.70067, 86.93401, "transformer"],
+            ["63 Badakankra", 22.70123, 86.93456, "transformer"],
+            ["100 Dhatkidih", 22.70178, 86.93512, "transformer"],
+            ["63 Bijay", 22.70234, 86.93567, "transformer"],
+            ["100 Gorangdih", 22.70289, 86.93623, "transformer"],
+            ["100 Sahebganj", 22.70345, 86.93678, "transformer"],
+            ["100 Kolabira", 22.70401, 86.93734, "transformer"],
+            ["250 Muria", 22.70456, 86.93789, "transformer"],
+            ["250 DC Residence", 22.70512, 86.93845, "transformer"],
+            ["250 Balak Madhya Vidyalay", 22.70567, 86.93901, "transformer"],
+            ["250 Civil Court", 22.70623, 86.93956, "transformer"],
+            ["250 Garage Chowk", 22.70678, 86.94012, "transformer"],
+            ["250 Girls High School", 22.70734, 86.94067, "transformer"],
+            ["250 SK Haat", 22.70789, 86.94123, "transformer"],
+            ["250 Sichai Vibhag", 22.70845, 86.94178, "transformer"],
+            ["250 Raja Mahal", 22.70901, 86.94234, "transformer"],
+            ["250 Samudaik Bhaban", 22.70089, 86.93512, "transformer"]
         ];
-        // Create a marker cluster group
+
         var markers = L.markerClusterGroup();
         var markerList = [];
-        // Add all markers to the cluster group
         equipment.forEach(function (loc) {
-            var marker = L.marker([loc[1], loc[2]], { icon: icons[loc[3]] });
-            markerList.push({ marker: marker, lat: loc[1], lon: loc[2], name: loc[0], type: loc[3] });
-            markers.addLayer(marker);
+            if (loc[1] !== null && loc[2] !== null) { // Skip entries with null coordinates
+                var marker = L.marker([loc[1], loc[2]], { icon: icons[loc[3]] });
+                markerList.push({ marker: marker, lat: loc[1], lon: loc[2], name: loc[0], type: loc[3] });
+                markers.addLayer(marker);
+            }
         });
         map.addLayer(markers);
-        // Function to calculate distance using Haversine formula
+
         function calculateDistance(lat1, lon1, lat2, lon2) {
             function toRad(value) { return value * Math.PI / 180; }
-            var R = 6371; // Earth's radius in km
+            var R = 6371;
             var dLat = toRad(lat2 - lat1);
             var dLon = toRad(lon2 - lon1);
             var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -430,7 +410,7 @@
             var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return (R * c).toFixed(2);
         }
-        // Update popup content with distance from user location
+
         function updateDistances(userLat, userLon) {
             markerList.forEach(function (item) {
                 var distance = calculateDistance(userLat, userLon, item.lat, item.lon);
@@ -445,7 +425,7 @@
                 item.marker.bindPopup(popupContent);
             });
         }
-        // Handle user location
+
         function onLocationFound(e) {
             var radius = e.accuracy / 2;
             if (window.userMarker) {
@@ -456,30 +436,40 @@
                 .bindPopup("<b>You are here</b>").openPopup();
             window.accuracyCircle = L.circle(e.latlng, { radius: radius, color: 'blue', fillOpacity: 0.2 }).addTo(map);
             updateDistances(e.latlng.lat, e.latlng.lng);
+            map.setView(e.latlng, 16); // Center on location only when triggered
         }
+
         function onLocationError(e) {
             alert("Location access denied or unavailable.");
         }
-        map.locate({ setView: true, maxZoom: 16, watch: true, enableHighAccuracy: true });
+
+        // Initial location fetch (optional, comment out if not needed)
+        map.locate({ setView: true, maxZoom: 16, watch: false, enableHighAccuracy: true });
         map.on('locationfound', onLocationFound);
         map.on('locationerror', onLocationError);
-        // Search and filter functionality with dropdown
+
+        // Manual locate button
+        document.getElementById('locate-btn').addEventListener('click', function () {
+            map.locate({ setView: true, maxZoom: 16, watch: false, enableHighAccuracy: true });
+        });
+
         var searchInput = document.getElementById('search');
         var filterSelect = document.getElementById('filter');
         var dropdown = document.getElementById('search-dropdown');
+
         function updateMarkersAndDropdown() {
             var searchText = searchInput.value.toLowerCase();
             var filterType = filterSelect.value;
-            // Filter equipment for dropdown suggestions
+
             var suggestions = markerList.filter(function (item) {
                 var matchesSearch = item.name.toLowerCase().includes(searchText);
                 var matchesFilter = filterType === 'all' || item.type === filterType;
                 return matchesSearch && matchesFilter;
             });
-            // Update dropdown
+
             dropdown.innerHTML = '';
             if (searchText && suggestions.length > 0) {
-                suggestions.slice(0, 10).forEach(function (item) { // Limit to 10 suggestions
+                suggestions.slice(0, 10).forEach(function (item) {
                     var div = document.createElement('div');
                     div.className = 'dropdown-item';
                     div.textContent = item.name;
@@ -487,7 +477,7 @@
                         searchInput.value = item.name;
                         dropdown.style.display = 'none';
                         updateMarkers(item.name.toLowerCase(), filterType);
-                        map.setView([item.lat, item.lon], 15); // Zoom to selected marker
+                        map.setView([item.lat, item.lon], 15);
                     };
                     dropdown.appendChild(div);
                 });
@@ -495,9 +485,10 @@
             } else {
                 dropdown.style.display = 'none';
             }
-            // Update map markers
+
             updateMarkers(searchText, filterType);
         }
+
         function updateMarkers(searchText, filterType) {
             markers.clearLayers();
             markerList.forEach(function (item) {
@@ -508,15 +499,14 @@
                 }
             });
         }
+
         searchInput.addEventListener('input', updateMarkersAndDropdown);
         filterSelect.addEventListener('change', updateMarkersAndDropdown);
-        // Hide dropdown when clicking outside
         document.addEventListener('click', function (e) {
             if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.style.display = 'none';
             }
         });
-        // Show dropdown on focus
         searchInput.addEventListener('focus', updateMarkersAndDropdown);
     </script>
 </body>
